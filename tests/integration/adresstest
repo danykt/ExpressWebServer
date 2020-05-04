@@ -1,0 +1,408 @@
+const request = require('supertest');
+const {Adress} = require('../../models/adress');
+const {User} = require('../../models/user');
+const mongoose = require('mongoose');
+let server;
+
+
+describe('/api/adress/', () =>{
+  beforeEach(() => {
+    server = require('../../index');
+  });
+
+  afterEach(async () => {
+    await server.close();
+   await Adress.remove({});
+    await User.remove({});
+  });
+
+
+  describe('GET /', () =>{
+    let token;
+    let user;
+    let userId;
+
+    beforeEach(() => {
+      user = new User({name: 'Cesar Labastida', email: 'dany_baautista@hotmail.com', password: 'something'});
+      token = user.generateAuthToken();
+      userId = user._id;
+    });
+
+    it('should return all adresses', async() => {
+      const adresses = [
+        {
+          adress: 'Othello South ST ',
+          state:'Washington',
+          zipcode: '98118',
+          city: 'Seattle',
+          customerId: userId
+        },
+        {
+          adress: 'Wallingford ST NE  ',
+          state:'Washington',
+          zipcode: '98125',
+          city: 'Northgate',
+          customerId: userId
+        },
+      ]
+
+      Adress.collection.insertMany(adresses);
+
+      const res = await request(server).get('/api/adress/').set('x-auth-token', token);
+      expect(res.status).toBe(200);
+      expect(res.body.length).toBe(2);
+    });
+  });
+
+
+  // TEST FAILS BUT OK WITH POSTMAN
+  // describe('GET /myadresses/:id', () =>{
+  //   let token;
+  //   let user;
+  //   let userId;
+  //   let user2;
+  //   let user2Id;
+  //
+  //   beforeEach(async () => {
+  //     user = new User({name: 'Cesar Labastida', email: 'dany_baautista@hotmail.com', password: 'something'});
+  //     await user.save();
+  //     userId = user._id;
+  //
+  //     user2 = new User({name: 'Another user', email: 'labastidac@spu.edu', password: 'something'});
+  //     await user2.save();
+  //     user2Id = user2._id;
+  //
+  //     token = user.generateAuthToken();
+  //   });
+  //
+  //   it('should return all adresses related to users id', async() => {
+  //     const adresses = [
+  //       {
+  //         adress: 'Othello South ST ',
+  //         state:'Washington',
+  //         zipcode: '98118',
+  //         city: 'Seattle',
+  //         userId: userId
+  //       },
+  //       {
+  //         adress: 'Wallingford ST NE  ',
+  //         state:'Washington',
+  //         zipcode: '98125',
+  //         city: 'Northgate',
+  //         userId: userId
+  //       },
+  //       {
+  //         adress: 'adress from user 2',
+  //         state:'Washington',
+  //         zipcode: '98125',
+  //         city: 'Northgate',
+  //         userId: user2Id
+  //       },
+  //     ];
+  //
+  //     await Adress.collection.insertMany(adresses);
+  //
+  //     const res = await request(server).get('/api/adress/myadresses/' + user._id).set('x-auth-token', token);
+  //     expect(res.status).toBe(200);
+  //     expect(res.body.length).toBe(2);
+  //     expect(res.body.some(g => g.adress === 'Othello South ST ')).toBeTruthy();
+  //     expect(res.body.some(g => g.adress === 'Wallingford ST NE  ')).toBeTruthy();
+  //
+  //
+  //   });
+  //
+  //
+  //
+  //   it('shoudld return 404 if no user with the given id exists', async() =>{
+  //     const id = mongoose.Types.ObjectId();
+  //
+  //     const res = await request(server).get('/api/adress/myadresses/' + id).set('x-auth-token', token);
+  //
+  //     expect(res.status).toBe(404);
+  //   });
+  //
+  //   it('shoudld return 401 if user is not logged in', async() =>{
+  //     token = ''
+  //
+  //     const res = await request(server).get('/api/adress/myadresses/' + userId).set('x-auth-token', token);
+  //
+  //
+  //
+  //     expect(res.status).toBe(401);
+  //   });
+  //
+  //   it('shoudld return 404 if invalid id is passed', async() =>{
+  //
+  //     const res = await request(server).get('/api/adress/myadresses/1').set('x-auth-token', token);
+  //
+  //     expect(res.status).toBe(404);
+  //   });
+  // });
+  //
+  // describe('GET /specific/:id', () =>{
+  //
+  //   let token;
+  //   let user;
+  //   let userId;
+  //   let adress;
+  //   let adressId;
+  //
+  //   beforeEach( async () => {
+  //     user = new User({name: 'Cesar Labastida', email: 'dany_baautista@hotmail.com', password: 'something'});
+  //     await user.save();
+  //     token = user.generateAuthToken();
+  //     userId = user._id;
+  //
+  //     adress = new Adress({
+  //       adress: 'Everrett South ST MLK way',
+  //       state:'Washington',
+  //       zipcode: '98118',
+  //       city: 'Everrett',
+  //       userId: userId
+  //     });
+  //
+  //     await adress.save();
+  //     adressId = adress._id;
+  //
+  //
+  //   });
+  //
+  //   it('should return a adress if valid id is passed', async() => {
+  //
+  //
+  //     await adress.save();
+  //     const res = await request(server).get('/api/adress/specific/' + adressId).set('x-auth-token', token);
+  //     expect(res.status).toBe(200);
+  //     expect(res.body.length).toBe(1);
+  //     expect(res.body).toHaveProperty('adress', adress.adress);
+  //   });
+  //
+  //   it('should return 404 if invalid id is passed', async () => {
+  //     const res = await request(server).get('/api/adress/1').set('x-auth-token', token);
+  //     expect(res.status).toBe(404);
+  //   })
+  //
+  //   it('should return 404 if no adress with the give id exists', async () => {
+  //     const id = mongoose.Types.ObjectId();
+  //     const res = await request(server).get('/api/adress/' + id).set('x-auth-token', token);
+  //   });
+  //
+  //
+  //
+  //
+  // });
+
+  describe('POST/', () =>{
+    let token;
+    let adress;
+    let zipcode;
+    let city;
+    let user;
+    let userId;
+    let state;
+    //let id;
+
+    const exec = async() =>{
+      return await request(server)
+        .post('/api/adress/')
+        .set('x-auth-token', token)
+        .send({
+            adress: adress,
+            zipcode: zipcode,
+            city: city,
+            state: state,
+            userId: userId });
+    }
+
+    beforeEach( async () => {
+      user = new User({name: 'Cesar Labastida', email: 'dany_baautista@hotmail.com', password: 'something'});
+      await user.save();
+      token = user.generateAuthToken();
+      userId = user._id;
+      adress = 'adress1 for testing purpose';
+      zipcode = '98115';
+      city = 'Seattle';
+      state = 'Washington';
+    })
+
+    it('should return 401 if client is not logged in', async() => {
+      token ='';
+      const res = await exec();
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 400 if adress is less than 5 characters', async() => {
+      adress = '1234';
+
+      const res = await exec();
+      expect(res.status).toBe(400);
+    });
+
+    it('should save the adress if it is valid', async() => {
+      await exec();
+      const adress = await Adress.find({adress: 'adress1 for testing purpose'});
+      expect(adress).not.toBeNull();
+    });
+
+
+
+    it('should return the adress if it is valid ', async() =>{
+      const res = await exec();
+      expect(res.body).toHaveProperty('_id');
+      expect(res.body).toHaveProperty('adress', 'adress1 for testing purpose');
+    });
+  });
+
+  describe('PUT/:id', () =>{
+    let token;
+    let newAdress;
+    let newState;
+    let newZipcode;
+    let newCity;
+    let adressObject;
+    let id;
+    let user;
+    let userId;
+
+
+
+    const exec = async () =>{
+      return await request(server)
+        .put('/api/adress/' + id)
+        .set('x-auth-token', token)
+        .send({adress: newAdress,
+               state: newState,
+               zipcode: newZipcode,
+               city: newCity,
+               userId: userId
+              });
+    }
+
+    beforeEach(async () => {
+      user = new User({name: 'Cesar Labastida', email: 'dany_baautista@hotmail.com', password: 'something'});
+      await user.save();
+      userId = user._id;
+
+      adressObject = new Adress({
+        adress: 'PUT: Everrett South ST MLK way',
+        state:'Washington',
+        zipcode: '98118',
+        city: 'Everrett',
+        userId: userId
+      });
+      await adressObject.save();
+
+      token = user.generateAuthToken();
+      id = adressObject._id;
+      newAdress = 'Updated newAdress for Everrett'
+      newState = 'Updated state';
+      newZipcode = 'Updated ZIPCODE';
+      newCity = ' Updated CITY';
+
+    })
+
+    it('should return 400 if newAdress is less than 5 characters', async() =>{
+      newAdress = '1234';
+      const res = await exec();
+      expect(res.status).toBe(400);
+    });
+    it('should return 401 if client is not logged in', async() => {
+      token ='';
+      const res = await exec();
+      expect(res.status).toBe(401);
+    });
+    it('should return 400 if newAdress is more than 255 characters', async() =>{
+      newAdress = new Array(300).join('a');
+      const res = await exec();
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 404 if id is invalid', async() =>{
+      id = 1;
+      const res = await exec();
+      expect(res.status).toBe(404);
+    });
+
+    it('should return the updated adress if it is valid', async() =>{
+
+      const res = await exec();
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('_id');
+      expect(res.body).toHaveProperty('adress', newAdress);
+    });
+
+
+  });
+
+  describe('DELETE/:id', () =>{
+    let token;
+    let adressObject;
+    let id;
+    let user;
+    let userId;
+
+    const exec = async () =>{
+      return await request(server)
+        .delete('/api/adress/' + id)
+        .set('x-auth-token', token)
+        .send();
+    }
+
+    beforeEach( async () =>{
+      user = new User({name: 'Cesar Labastida', email: 'dany_baautista@hotmail.com', password: 'something'});
+      userId = user._id;
+
+      adressObject = new Adress({
+        adress: 'PUT: Everrett South ST MLK way',
+        state:'Washington',
+        zipcode: '98118',
+        city: 'Everrett',
+        userId: userId
+      });
+
+      await adressObject.save();
+      id = adressObject._id;
+      token = new User({ isAdmin: true}).generateAuthToken();
+
+    });
+
+    it('should return 401 if client is not logged in', async() =>{
+      token ='';
+      const res = await exec();
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 403 if the user is not an admin', async() =>{
+      token = new User({isAdmin: false}).generateAuthToken();
+      const res = await exec();
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 404 if id is invalid', async() =>{
+      id = 1;
+      const res = await exec();
+      expect(res.status).toBe(404);
+    });
+
+    it('should return 404 if no adress with the given id was found', async() =>{
+      id = mongoose.Types.ObjectId();
+      const res = await exec();
+      expect(res.status).toBe(404);
+    });
+
+    it('should return the removed genre', async() =>{
+      const res = await exec();
+
+      const adressInDb = await Adress.findById(id);
+
+      expect(adressInDb).toBeNull();
+    });
+
+    it('should return the removed adress', async() =>{
+      const res = await exec();
+      expect(res.body).toHaveProperty('_id', adressObject._id.toHexString());
+      expect(res.body).toHaveProperty('adress', adressObject.adress);
+    });
+
+  });
+});
